@@ -15,7 +15,7 @@ variable "vpc_tags" {
 }
 
 variable "cidr_block" {
-    default =  "10.0.0.0/24" 
+    default =  "10.0.0.0/16" 
 }
 
 variable "dns_hostnames" {
@@ -66,5 +66,21 @@ variable "database_subnet_tags" {
 }
 
 variable "nat_gateway_tags" {
+  default = {}
+}
+
+variable "public_routes_tags" {
+  default = {}
+}
+
+variable "private_routes_tags" {
+  default = {}
+}
+
+variable "database_routes_tags" {
+  default = {}
+}
+
+variable "NAT_tags" {
   default = {}
 }

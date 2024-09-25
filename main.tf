@@ -90,6 +90,14 @@ resource "aws_db_subnet_group" "default" {
 
 resource "aws_eip" "NAT" {
   domain = "vpc"
+
+  tags = merge(
+    var.common_tags,
+    var.NAT_tags,
+    {
+      Name = local.resources_name
+    }
+  )
 }
 
 resource "aws_nat_gateway" "nat_gateway" {
@@ -105,4 +113,76 @@ resource "aws_nat_gateway" "nat_gateway" {
   )
 
   depends_on = [ aws_internet_gateway.igw ]
+}
+
+resource "aws_route_table" "public_routes" {
+  vpc_id = aws_vpc.main.id
+
+    tags = merge(
+    var.common_tags,
+    var.public_routes_tags,
+    {
+      Name = "${local.resources_name}-public"
+    }
+  )
+}
+
+resource "aws_route_table" "private_routes" {
+  vpc_id = aws_vpc.main.id
+
+    tags = merge(
+    var.common_tags,
+    var.private_routes_tags,
+    {
+      Name = "${local.resources_name}-private"
+    }
+  )
+}
+
+resource "aws_route_table" "database_routes" {
+  vpc_id = aws_vpc.main.id
+
+    tags = merge(
+    var.common_tags,
+    var.database_routes_tags,
+    {
+      Name = "${local.resources_name}-database"
+    }
+  )
+}
+
+resource "aws_route" "public_internet_routing" {
+  route_table_id            = aws_route_table.public_routes.id
+  destination_cidr_block    = "0.0.0.0/0"
+  gateway_id = aws_internet_gateway.igw.id
+}
+
+resource "aws_route" "private_internet_routing" {
+  route_table_id            = aws_route_table.private_routes.id
+  destination_cidr_block    = "0.0.0.0/0"
+  nat_gateway_id  = aws_nat_gateway.nat_gateway.id
+}
+
+resource "aws_route" "database_internet_routing" {
+  route_table_id            = aws_route_table.database_routes.id
+  destination_cidr_block    = "0.0.0.0/0"
+  nat_gateway_id  = aws_nat_gateway.nat_gateway.id
+}
+
+resource "aws_route_table_association" "public" {
+  count = length(var.database_subnet_cidrblocks)
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public_routes.id
+}
+
+resource "aws_route_table_association" "private" {
+  count = length(var.database_subnet_cidrblocks)
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private_routes.id
+}
+
+resource "aws_route_table_association" "database" {
+  count = length(var.database_subnet_cidrblocks)
+  subnet_id      = aws_subnet.database[count.index].id
+  route_table_id = aws_route_table.database_routes.id
 }

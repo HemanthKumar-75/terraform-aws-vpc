@@ -73,3 +73,4 @@ resource "aws_subnet" "database" {
     }
   )
 }
+
